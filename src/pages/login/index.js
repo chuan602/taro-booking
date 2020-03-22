@@ -1,6 +1,6 @@
 import React from "react";
 import Taro, { Component } from '@tarojs/taro';
-import { View, Image } from '@tarojs/components';
+import {View, Image, Text} from '@tarojs/components';
 import { connect } from '@tarojs/redux';
 import { AtForm, AtInput, AtButton, AtIcon, AtMessage } from "taro-ui";
 import zhku from '../../images/zhku.png';

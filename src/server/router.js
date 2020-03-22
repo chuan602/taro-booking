@@ -3,7 +3,7 @@ const mysql = require('mysql');
 const uuid = require('uuid/v1');
 const dayjs = require('dayjs');
 const qr = require('qr-image');
-const { DEADLINE_TIME, INVALIDATION_TIME } = require('./config');
+const { DEADLINE_TIME, INVALIDATION_TIME, SCAN_DEADLINE_TIME } = require('./config');
 
 const router = express.Router();
 
@@ -24,8 +24,11 @@ router.get('/', function (req, res) {
 * POST 登陆API
 * */
 router.post('/login', function (req, res) {
-    const {userNum, password} = req.body;
-    connection.query(`select * from t_users where num = ? and password = ?`, [userNum, password], function (err, data) {
+    const {userNum, password, isScanEnd} = req.body;
+    const sql = isScanEnd
+      ? 'select * from t_users where num = ? and password = ? and authority = 4'
+      : 'select * from t_users where num = ? and password = ?';
+    connection.query(sql, [userNum, password], function (err, data) {
         if (err) { res.status(500) }
         if (data && data.length) {
           res.json(data[0]);
@@ -120,7 +123,7 @@ router.post('/booking', function (req, res) {
 * */
 router.get('/qr/:id', function (req, res) {
   const orderId = req.params.id;
-  var qrCode = qr.image('https://www.baidu.com');
+  var qrCode = qr.image(orderId);
   res.setHeader('Content-type', 'image/png');  //sent qr image to client side
   qrCode.pipe(res);
 });
@@ -194,6 +197,64 @@ router.post('/modify/password/:userId', function (req, res) {
             if (err) res.status(500);
             res.json('success');
           })
+      }
+    })
+});
+
+/**
+ * 扫码端小程序服务
+ * @type {Router}
+ */
+/*
+* GET  获取班车列表
+* */
+router.get('/scan/carList', function (req, res) {
+  const { date } = req.query;
+  // 订票截止时间 （发车前10分钟）
+  const deadlineTime = dayjs().isBefore(dayjs(date))
+    ? '00:00:00'
+    : dayjs().subtract(SCAN_DEADLINE_TIME, 'minute').format('HH:mm:ss');
+  connection.query(`select * from t_ticket where depart_date = ? and depart_time > ? order by depart_time`,
+    [date, deadlineTime], function (err, data) {
+      if (err) { res.status(500) }
+      if (data && data.length) {
+        for (const item of data){
+          // 处理班车日期和时间的格式
+          item.depart_time = item.depart_time.slice(0, 5);
+          item.depart_date = new Date(item.depart_date).toLocaleDateString();
+        }
+        res.json(data);
+      } else {
+        res.send(null);
+      }
+    })
+});
+
+/**
+ * POST 扫码请求API
+ * @type {Router}
+ */
+router.post('/scan/qr', function (req, res) {
+  const { orderId, carId } = req.body;
+  connection.query(`SELECT * FROM t_order WHERE id = ? AND car_id = ?`,
+    [orderId, carId], function (err, data) {
+      if (err) res.status(500);
+      if (!data.length){
+        // 二维码订单 与 当前班车信息不符
+        res.json('')
+      } else {
+        // 更改车票订单状态 待出行(0) --> 已出行(1)
+        connection.query(`UPDATE t_order SET order_status = 1 WHERE id = ?`,
+          [orderId], function (err, data1) {
+            if (err) res.status(500);
+            connection.query(`SELECT * FROM t_users u INNER JOIN t_order o ON o.user_id = u.id WHERE o.id = ?`,
+              [orderId], function (err, data2) {
+                if (err) res.status(500);
+                if (data2.length){
+                  res.json(data2[0]);
+                }
+              })
+          });
       }
     })
 });

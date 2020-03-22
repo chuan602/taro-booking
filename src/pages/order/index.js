@@ -70,9 +70,10 @@ class Order extends Component {
   };
 
   handleModalClose = () => {
+    this.queryAllOrderData();
     this.setState({
       isModalOpen: false
-    })
+    });
   };
 
   handleShowQrClick = (id) => {

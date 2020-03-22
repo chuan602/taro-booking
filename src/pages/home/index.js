@@ -304,7 +304,7 @@ class Index extends Component {
           <View className='modal-image-container'>
             <Image
               mode='aspectFit'
-              src={`${baseUrl}/qr/${encodeURIComponent(tmp_orderId)}`}
+              src={tmp_orderId ? `${baseUrl}/qr/${encodeURIComponent(tmp_orderId)}` : ''}
             />
           </View>
         </AtModalContent>
