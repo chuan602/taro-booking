@@ -27,7 +27,7 @@ router.post('/login', function (req, res) {
     const {userNum, password, isScanEnd} = req.body;
     const sql = isScanEnd
       ? 'select * from t_users where num = ? and password = ? and authority = 4'
-      : 'select * from t_users where num = ? and password = ?';
+      : 'select * from t_users where num = ? and password = ? and authority != 4';
     connection.query(sql, [userNum, password], function (err, data) {
         if (err) { res.status(500) }
         if (data && data.length) {
