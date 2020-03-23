@@ -9,7 +9,7 @@ import {
 import './index.less';
 import Blank from "../../components/Blank";
 import OrderItem from "../../components/OrderItem";
-import {baseUrl} from "../../config";
+import {baseUrl, wsBaseUrl} from "../../config";
 
 const tabList = [
   {
@@ -37,7 +37,8 @@ class Order extends Component {
   state = {
     tabCurrent: 0,
     isModalOpen: false,
-    tmp_orderId: ''
+    tmp_orderId: '',
+    socket: {}
   };
 
   config = {
@@ -53,6 +54,14 @@ class Order extends Component {
   componentDidMount = () => {
     this.queryAllOrderData();
   };
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    const { isModalOpen } = this.state;
+    // Modal关闭时间执行
+    if (prevState.isModalOpen && prevState.isModalOpen !== isModalOpen){
+      this.queryAllOrderData();
+    }
+  }
 
   queryAllOrderData = () => {
     const {dispatch} = this.props;
@@ -70,13 +79,45 @@ class Order extends Component {
   };
 
   handleModalClose = () => {
-    this.queryAllOrderData();
+    const { socket } = this.state;
+    // 关闭socket
+    socket.close && socket.close();
     this.setState({
       isModalOpen: false
     });
   };
 
+  createSocketConnection = (orderId) => {
+    const _that = this;
+    Taro.connectSocket({
+      url: `${wsBaseUrl}/wss?orderId=${encodeURIComponent(orderId)}`
+    })
+      .then(socket => {
+        socket.onMessage(function (msg) {
+          const { data } = msg;
+          if (data === 'ok') {
+            socket.close();
+            Taro.showToast({
+              title: '乘车成功',
+              icon: 'success',
+              duration: 3000,
+              mask: true
+            });
+            setTimeout(() => {
+              _that.setState({
+                isModalOpen: false
+              })
+            }, 3000);
+          }
+        });
+        this.setState({
+          socket
+        })
+      })
+  };
+
   handleShowQrClick = (id) => {
+    this.createSocketConnection(id);
     this.setState({
       isModalOpen: true,
       tmp_orderId: id

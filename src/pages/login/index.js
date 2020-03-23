@@ -4,6 +4,7 @@ import {View, Image, Text} from '@tarojs/components';
 import { connect } from '@tarojs/redux';
 import { AtForm, AtInput, AtButton, AtIcon, AtMessage } from "taro-ui";
 import zhku from '../../images/zhku.png';
+import { wsBaseUrl } from '../../config/index';
 import './index.less';
 
 @connect(({ login, global }) => ({
@@ -21,6 +22,10 @@ class Login extends Component {
   config = {
     navigationBarTitleText: '登录',
   };
+
+  componentDidMount() {
+
+  }
 
   usernameOnChange(val) {
     this.setState({

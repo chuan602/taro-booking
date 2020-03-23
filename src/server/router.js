@@ -3,7 +3,7 @@ const mysql = require('mysql');
 const uuid = require('uuid/v1');
 const dayjs = require('dayjs');
 const qr = require('qr-image');
-const { DEADLINE_TIME, INVALIDATION_TIME, SCAN_DEADLINE_TIME } = require('./config');
+const { DEADLINE_TIME, INVALIDATION_TIME, SCAN_DEADLINE_TIME, SocketMap } = require('./config');
 
 const router = express.Router();
 
@@ -251,6 +251,14 @@ router.post('/scan/qr', function (req, res) {
               [orderId], function (err, data2) {
                 if (err) res.status(500);
                 if (data2.length){
+                  // socket 通知乘客扫码成功
+                  const socket = SocketMap.get(orderId);
+                  if (socket){
+                    socket.send('ok');
+                    SocketMap.delete(orderId);
+                  }
+
+                  // response 通知乘务员扫码成功
                   res.json(data2[0]);
                 }
               })

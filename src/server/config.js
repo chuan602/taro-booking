@@ -9,3 +9,6 @@ exports.INVALIDATION_TIME = 10;
 
 // 扫码端获取班车列表 延后时间
 exports.SCAN_DEADLINE_TIME = 30;
+
+// 存储Socket对象的Map
+exports.SocketMap = new Map();
