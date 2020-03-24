@@ -17,9 +17,23 @@ export default {
         const auth = Taro.getStorageSync(USER_INFO);
         const { id } = auth;
         const res = yield call(queryOrderListService, id);
+        const { status, data } = res.data;
+        if (status === 400){
+          Taro.showModal({
+            title: '警告',
+            content: '由于新增过期车票，导致您的积分已达0分，现暂停该账号使用',
+            showCancel: false,
+          })
+            .then(() => {
+              Taro.clearStorage();
+              Taro.reLaunch({
+                url: '/pages/login/index'
+              })
+            })
+        }
         yield put({
           type: 'queryOrderListEnd',
-          payload: res.data || []
+          payload: data || []
         })
       } finally {
         Taro.hideLoading();
@@ -28,7 +42,6 @@ export default {
     },
     *queryOrderReturn({ payload }, { put, call }){
       const res = yield call(queryOrderReturnService, payload);
-      console.log('res', res);
       // 更新数据
       yield put({
         type: 'queryOrderList'

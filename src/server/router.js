@@ -3,7 +3,9 @@ const mysql = require('mysql');
 const uuid = require('uuid/v1');
 const dayjs = require('dayjs');
 const qr = require('qr-image');
-const { DEADLINE_TIME, INVALIDATION_TIME, SCAN_DEADLINE_TIME, SocketMap } = require('./config');
+const { DEADLINE_TIME, SCAN_DEADLINE_TIME, SocketMap,
+  INVALIDATION_TIME} = require('./config');
+const { updateIntegral } = require('./common');
 
 const router = express.Router();
 
@@ -17,7 +19,8 @@ const connection = mysql.createConnection({
 connection.connect();
 
 router.get('/', function (req, res) {
-    res.send('this is router')
+
+  res.render('index');
 });
 
 /*
@@ -31,9 +34,30 @@ router.post('/login', function (req, res) {
     connection.query(sql, [userNum, password], function (err, data) {
         if (err) { res.status(500) }
         if (data && data.length) {
-          res.json(data[0]);
+
+          // 账号密码验证成功
+          if (!isScanEnd){
+            // 乘客端
+            const { id, authority } = data[0];
+            // 管理员跳过积分判断
+            if (authority === 3) {
+              res.json({status: 200, data: data[0]});
+              return;
+            }
+            updateIntegral(connection, id, res)
+              .then((integral) => {
+                res.json({status: 200, data: data[0]});
+              })
+              .catch((isIntegral) => {
+                isIntegral && res.json({status: 400});
+              });
+          } else {
+            res.json({status: 200, data: data[0]});
+          }
         } else {
-          res.send('');
+
+          //密码验证失败
+          res.json({status: 401});
         }
     })
 });
@@ -42,13 +66,21 @@ router.post('/login', function (req, res) {
 * GET  获取车票列表
 * */
 router.get('/carList', function (req, res) {
-  const { date } = req.query;
+  const { date, isSixHour } = req.query;
   // 订票截止时间 （发车前10分钟）
   const deadlineTime = dayjs().isBefore(dayjs(date))
     ? '00:00:00'
     : dayjs().add(DEADLINE_TIME, 'minute').format('HH:mm:ss');
-  connection.query(`select * from t_ticket where depart_date = ? and depart_time > ? order by depart_time`,
-    [date, deadlineTime], function (err, data) {
+  const sixHourdeadlineTime = dayjs().add(6, 'hour').isBefore(dayjs().endOf('day'))
+    ? dayjs().add(6, 'hour').format('HH:mm:ss')
+    : '23:59:59';
+  const sql = isSixHour === 'true'
+    ? `SELECT * FROM t_ticket WHERE depart_date = ? AND depart_time > ? AND depart_time < ? order by depart_time`
+    : `select * from t_ticket where depart_date = ? and depart_time > ? order by depart_time`;
+  const dataArr = isSixHour === 'true'
+    ? [date, deadlineTime, sixHourdeadlineTime]
+    : [date, deadlineTime];
+  connection.query(sql, dataArr, function (err, data) {
     if (err) { res.status(500) }
     if (data && data.length) {
       for (const item of data){
@@ -134,12 +166,18 @@ router.get('/qr/:id', function (req, res) {
 router.get('/order/list/:userId', function (req, res) {
   const userId = req.params.userId;
   const { type } = req.query;
-  // 更新 待出行 订单的状态（是否过期）
-  const date = dayjs().format('YYYY-MM-DD');
-  const time = dayjs().add(INVALIDATION_TIME, 'minute').format('HH:mm:ss');
-  const updateStatusSql = `UPDATE t_order SET order_status = 3 WHERE id IN (SELECT tmp.id FROM (SELECT o.id AS id FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = 0 AND t.depart_date < ? OR user_id = ? AND order_status = 0 AND t.depart_date = ? AND t.depart_time < ?)tmp)`;
-  connection.query(updateStatusSql, [userId, date, userId, date, time], () => {});
-
+  // 更新 积分
+  updateIntegral(connection, userId, res)
+    .then(() => {
+      // 更新 待出行 订单的状态（是否过期）
+      const updateStatusSql = `UPDATE t_order SET order_status = 3 WHERE id IN (SELECT tmp.id FROM (SELECT o.id AS id FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = 0 AND t.depart_date < ? OR user_id = ? AND order_status = 0 AND t.depart_date = ? AND t.depart_time < ?)tmp)`;
+      const date = dayjs().format('YYYY-MM-DD');
+      const time = dayjs().subtract(INVALIDATION_TIME, 'minute').format('HH:mm:ss');
+      connection.query(updateStatusSql, [userId, date, userId, date, time], () => {});
+    })
+    .catch((isIntegral) => {
+      isIntegral && res.json({status: 400})
+    });
   // 获取用户的订单列表
   const sql = type ? `SELECT * FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = ? ORDER BY order_time DESC` :
     `SELECT * FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? ORDER BY order_time DESC`;
@@ -152,7 +190,7 @@ router.get('/order/list/:userId', function (req, res) {
       item.depart_date = new Date(item.depart_date).toLocaleDateString();
       item.order_time = new Date(item.order_time).toLocaleDateString() + ' ' + new Date(item.order_time).toTimeString().slice(0,5);
     }
-    res.json(data);
+    res.json({status: 200, data});
   })
 });
 
@@ -202,6 +240,21 @@ router.post('/modify/password/:userId', function (req, res) {
 });
 
 /**
+ * GET 获取用户积分
+ */
+router.get('/integral/:userId', function (req, res) {
+  const { userId } = req.params;
+  connection.query(`SELECT integral FROM t_users WHERE id = ?`,
+    [userId], function (err, data) {
+      if (err) res.status(500);
+      if (data.length) {
+        const { integral=0 } = data[0];
+        res.json(integral);
+      }
+    })
+});
+
+/**
  * 扫码端小程序服务
  * @type {Router}
  */
@@ -236,7 +289,7 @@ router.get('/scan/carList', function (req, res) {
  */
 router.post('/scan/qr', function (req, res) {
   const { orderId, carId } = req.body;
-  connection.query(`SELECT * FROM t_order WHERE id = ? AND car_id = ?`,
+  connection.query(`SELECT * FROM t_order WHERE id = ? AND car_id = ? AND order_status = 0`,
     [orderId, carId], function (err, data) {
       if (err) res.status(500);
       if (!data.length){

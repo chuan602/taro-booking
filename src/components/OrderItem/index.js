@@ -98,6 +98,13 @@ export default class OrderItem extends Component{
           <View className='content-item'>
             订票数量：{ ticketNum }
           </View>
+          {
+            statusCode === 3 ? (
+              <View className='content-item' style={{color: '#F83261'}}>
+                已扣除4积分
+              </View>
+            ) : ''
+          }
         </View>
         {
           statusCode === 0 ? btnGroup : ''

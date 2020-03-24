@@ -10,6 +10,6 @@ export const loginService = ({ userNum, password }) => (
       password
     }
   })
-)
+);
 
 

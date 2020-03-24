@@ -16,13 +16,7 @@ import exchangeIcon from '../../images/icon/exchange.png';
 import {USER_INFO} from "../../utils/constants";
 import {baseUrl, stuBaseDay, teaBaseDay, manBaseDay} from "../../config";
 
-/**
- * 日期tabList，
- * @type {Array} {title, value}
- */
-let tabList = [];
-
-@connect(({home}) => ({
+@connect(({home, global}) => ({
   ...home,
 }))
 class Index extends Component {
@@ -40,8 +34,8 @@ class Index extends Component {
     enablePullDownRefresh: true
   };
 
-  componentWillMount() {
-    Taro.showLoading({
+componentWillMount() {
+  Taro.showLoading({
       title: '正在加载...',
       mask: true,
     });
@@ -49,7 +43,6 @@ class Index extends Component {
   }
 
   componentDidMount = () => {
-
   };
 
   componentDidUpdate(prevProps, prevState, snapshot) {
@@ -70,43 +63,22 @@ class Index extends Component {
   };
 
   refreshData = () => {
-    const {tabCurrent} = this.state;
-    // 更新TabList
-    this.processTabList();
-    // 查询当天票务列表
-    this.queryTicketListData(tabList[tabCurrent].value);
+    // 更新积分、更新tabList、查询当天票务列表
+    this.queryTicketListData();
   };
 
   /**
-   * 查询指定日期的票务情况
-   * @param {string} day 要查询的日期，参数必须是dayjs可解释的
+   * 查询tabList中的票务情况
    */
-  queryTicketListData = (day) => {
+  queryTicketListData = () => {
     const {dispatch} = this.props;
-    const date = dayjs(day);
-    const valueDate = date.format('YYYY-MM-DD');
+    const { tabCurrent } = this.state;
+    // const date = dayjs(tabList[tabCurrent].value);
+    // const valueDate = date.format('YYYY-MM-DD');
     dispatch({
       type: 'home/queryCarListByDate',
-      payload: valueDate
+      tabCurrent,
     });
-
-  };
-
-  processTabList = () => {
-    const authObj = Taro.getStorageSync(USER_INFO);
-    const auth_stu = authObj.authority === 1;
-    const auth_tea = authObj.authority === 2;
-    const bookableDateNum = auth_stu ? stuBaseDay : auth_tea ? teaBaseDay : manBaseDay;
-    const today = dayjs();
-    tabList = [];
-
-    // 更新tabs日期
-    for (let i = 0; i < bookableDateNum; ++i) {
-      tabList.push({
-        title: today.add(i, 'day').format('M[月]DD'),
-        value: today.add(i, 'day').format('YYYY-MM-DD')
-      })
-    }
   };
 
   handleItemClick = (id) => {
@@ -117,7 +89,8 @@ class Index extends Component {
   };
 
   handleTabClick = (current) => {
-    this.setState({
+    const { tabCurrent } = this.state;
+    current !== tabCurrent && this.setState({
       tabCurrent: current,
       isHaizhuCampus: true
     }, () => {
@@ -125,7 +98,7 @@ class Index extends Component {
         title: '正在加载...',
         mask: true,
       });
-      this.queryTicketListData(tabList[current].value);
+      this.queryTicketListData();
     });
   };
 
@@ -329,6 +302,7 @@ class Index extends Component {
 
   renderTabPane = () => {
     const {tabCurrent} = this.state;
+    const { tabList } = this.props;
     const arr = tabList.slice();
     return arr.length
       ? arr.map((item, index) => (
@@ -343,6 +317,7 @@ class Index extends Component {
 
   render() {
     const {tabCurrent} = this.state;
+    const { tabList } = this.props
     return (
       <View className="home">
         <AtTabs

@@ -9,13 +9,21 @@ import pointIcon from '../../images/user/point.png';
 import modifyIcon from '../../images/user/modify-password.png';
 import './index.less';
 
-@connect(({user}) => ({
+@connect(({user, global}) => ({
   ...user,
+  myIntegral: global.myIntegral
 }))
 export default class User extends Component {
   config = {
     navigationBarTitleText: '我的',
   };
+
+  componentDidShow() {
+    const { dispatch } = this.props;
+    dispatch({
+      type: 'global/queryIntegral'
+    })
+  }
 
   handleModalConfirm = () => {
     Taro.clearStorage();
@@ -35,7 +43,7 @@ export default class User extends Component {
   };
 
   render() {
-    const { isModalOpen } = this.state;
+    const { myIntegral } = this.props;
     const { authority, num } = Taro.getStorageSync('USER_INFO') || {};
     return (
       <View className="user-page">
@@ -67,18 +75,18 @@ export default class User extends Component {
             arrow='right'
           />
           <AtListItem
-            title='我的信用分'
-            thumb={pointIcon}
-            onClick={() => {}}
-            arrow='right'
-          />
-          <AtListItem
             title='更改密码'
             thumb={modifyIcon}
             onClick={() => Taro.navigateTo({
               url: '/pages/password/index'
             })}
             arrow='right'
+          />
+          <AtListItem
+            title='我的信用分'
+            thumb={pointIcon}
+            onClick={() => {}}
+            extraText={`${myIntegral}分`}
           />
         </AtList>
       </View>

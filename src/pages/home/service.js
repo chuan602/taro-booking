@@ -1,11 +1,12 @@
 import Request from '../../utils/request';
 
-export const queryCarListByDateService = date =>
+export const queryCarListByDateService = (date, isSixHour) =>
   Request({
     url: '/carList',
     method: 'GET',
     data: {
-      date
+      date,
+      isSixHour
     },
   });
 

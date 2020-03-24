@@ -3,6 +3,20 @@ import {
   queryBookingTicketService,
   queryCarListByDateService
 } from './service';
+import { queryIntegralService } from "../../models/globalService";
+import {USER_INFO} from "../../utils/constants";
+import {manBaseDay, stuBaseDay, teaBaseDay} from "../../config";
+import dayjs from "dayjs";
+
+const processAvailableBookingDay = (integral ,baseDay) => {
+  const resultObj = { calcDay: 1, isSixHour: false };
+  console.log('integral', integral);
+  if (integral === 10) resultObj.calcDay = baseDay;
+  if (integral >= 8 && integral <= 9) resultObj.calcDay = baseDay - 1;
+  if (integral >= 4 && integral <= 7) resultObj.calcDay = baseDay - 2;
+  if (integral >= 1 && integral <= 3) resultObj.isSixHour = true;
+  return resultObj;
+};
 
 export default {
   namespace: 'home',
@@ -11,12 +25,23 @@ export default {
     h_ticket: [],
     b_ticket: [],
     tmp_orderId: '',
-    isShowQr: false
+    isShowQr: false,
+    tabList: [],
+    isSixHour: false
   },
   effects: {
-    *queryCarListByDate({payload}, { put, call }){
+    *queryCarListByDate({tabCurrent}, { put, call, select }){
       try {
-        const res = yield call(queryCarListByDateService, payload);
+        const { id } = Taro.getStorageSync(USER_INFO);
+        const result = yield call(queryIntegralService, id);
+        const { data: integral } = result;
+        yield put({
+          type: 'queryTabList',
+          integral
+        });
+        const {tabList, isSixHour} = yield select(({ home }) => home);
+        console.log('tabList', tabList);
+        const res = yield call(queryCarListByDateService, tabList[tabCurrent].value, isSixHour);
         yield put({
           type: 'queryCarListEnd',
           payload: res.data || []
@@ -67,6 +92,30 @@ export default {
       return {
         ...state,
         isShowQr: payload
+      }
+    },
+    queryTabList(state, { integral }){
+      const authObj = Taro.getStorageSync(USER_INFO);
+      const auth_stu = authObj.authority === 1;
+      const auth_tea = authObj.authority === 2;
+      const bookableDateObj = auth_stu
+        ? processAvailableBookingDay(integral, stuBaseDay)
+        : auth_tea
+          ? processAvailableBookingDay(integral, teaBaseDay)
+          : {calcDay: manBaseDay, isSixHour: false};
+      const today = dayjs();
+      const tabList = [];
+      // 更新tabs日期
+      for (let i = 0; i < bookableDateObj.calcDay; ++i) {
+        tabList.push({
+          title: today.add(i, 'day').format('M[月]DD'),
+          value: today.add(i, 'day').format('YYYY-MM-DD')
+        })
+      }
+      return {
+        ...state,
+        tabList,
+        isSixHour: bookableDateObj.isSixHour
       }
     }
   },

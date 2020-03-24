@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>chuan602</title>
+    <style>
+      html, body{
+        margin: 0;
+        padding: 0;
+        width: 100%;
+      }
+      body{
+        min-height: 100vh;
+        position: relative;
+        box-sizing: border-box;
+        padding: 20px 20px 60px;
+      }
+    </style>
+</head>
+<body>
+  <h3 style="text-align: center; overflow: hidden;">深入Node.js多进程底层原理</h3>
+  <p>进程和线程，可以说是老僧长谈的话题了。</p>
+  <p>只要是从事计算机相关的小伙伴，提起这个大都思如泉涌，多线程～高并发～ 但各种零散的概念和认知或许难以汇成一个成体系的知识结构。我们先来罗列一下这两个概念简洁的官方解释。</p>
+  <ul>
+    <li>进程：处于执行期的代码，正在运行的程序，它不仅包括目标代码，还有数据、资源、状态和虚拟的计算机。</li>
+    <li>线程：在一个程序里的一个执行路线就叫做线程（thread）。更准确的定义是：线程是“一个进程内部的控制序列”。</li>
+  </ul>
+  <p>看到上面两个定义，很多小伙伴小眉头可能会皱一下，啥@#¥%玩意。。怪怪给小伙伴们准备了下图帮助理解哈~。。</p>
+  <p>进程其实遍布在我们电脑的每个角落，刚刚被对面团灭的英雄联盟，浏览器上正在播放的小电影等等，都是一个个运行中的进程。</p>
+  <p>进程其实是处于执行期的程序和相关资源的总称，里面包含了要执行的代码段，需要用到的文件，端口，硬件资源，很常见的一种说法是进程是资源分配的最小单位，这句话更直白的说就是，要运行某个可执行的代码段会需要某些资源，当这个代码段运行起来的时候，这些资源也必须被分配给他。</p>
+  <p>那我们总结下就是：运行中的代码+他占有的资源 = 进程。</p>
+  <pre>
+    作者：接水怪
+    链接：https://juejin.im/post/5e7732aa518825492e497fe0
+    来源：掘金
+  </pre>
+  <p style="position: absolute; bottom: 20px; text-align: center;
+  left: 0;right: 0; font-size: 14px;">
+    Copyright © 2020. All Rights Reserved.
+    <a
+      href="http://beian.miit.gov.cn"
+      target="_blank"
+      style="color: #000;"
+    >粤ICP备20015603号</a>
+  </p>
+</body>
+</html>

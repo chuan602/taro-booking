@@ -1,9 +1,9 @@
 // 请求连接前缀
-// export const baseUrl = process.env.NODE_ENV === 'production'
-//   ? 'https://chuan602.top'
-//   : 'http://localhost:443';
+export const baseUrl = process.env.NODE_ENV === 'production'
+  ? 'https://chuan602.top'
+  : 'http://localhost:443';
 
-export const baseUrl = 'https://chuan602.top';
+// export const baseUrl = 'https://chuan602.top';
 
 // socket请求baseURL
 export const wsBaseUrl = 'wss://chuan602.top';

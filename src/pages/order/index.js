@@ -71,7 +71,8 @@ class Order extends Component {
   };
 
   handleTabClick = (current) => {
-    this.setState({
+    const { tabCurrent } = this.state;
+    current !== tabCurrent && this.setState({
       tabCurrent: current
     }, () => {
       this.queryAllOrderData();
