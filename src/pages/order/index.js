@@ -6,10 +6,14 @@ import {
   AtModal, AtModalAction, AtModalContent, AtModalHeader,
   AtTabs, AtTabsPane
 } from 'taro-ui';
+import dayjs from "dayjs";
+import isBetween from 'dayjs/plugin/isBetween';
+dayjs.extend(isBetween);
 import './index.less';
 import Blank from "../../components/Blank";
 import OrderItem from "../../components/OrderItem";
 import {baseUrl, wsBaseUrl} from "../../config";
+import {USER_INFO} from "../../utils/constants";
 
 const tabList = [
   {
@@ -47,11 +51,19 @@ class Order extends Component {
   };
 
   onPullDownRefresh = () => {
+    Taro.showLoading({
+      title: '正在加载...',
+      mask: true,
+    });
     this.queryAllOrderData();
   };
 
 
   componentDidMount = () => {
+    Taro.showLoading({
+      title: '正在加载...',
+      mask: true,
+    });
     this.queryAllOrderData();
   };
 
@@ -75,6 +87,10 @@ class Order extends Component {
     current !== tabCurrent && this.setState({
       tabCurrent: current
     }, () => {
+      Taro.showLoading({
+        title: '正在加载...',
+        mask: true,
+      });
       this.queryAllOrderData();
     })
   };
@@ -125,16 +141,37 @@ class Order extends Component {
     })
   };
 
+  processPunishIntegral = (orderId) => {
+    const { allOrder } = this.props;
+    const {depart_date, depart_time} = allOrder.find(item => item.id === orderId) || {};
+    const departTime = dayjs(`${depart_date} ${depart_time}`);
+    const departTimeOneHourBefore = departTime.subtract(1, 'hour');
+    const departTimeFourHourBefore = departTime.subtract(4, 'hour');
+    const now = dayjs();
+    if (now.isAfter(departTimeOneHourBefore)) return 2;
+    if (now.isBetween(departTimeFourHourBefore, departTimeOneHourBefore, 'second', '[]')) return 1;
+    return 0;
+  };
+
   handleReturnTicketClick = (id) => {
+    const { authority } = Taro.getStorageSync(USER_INFO);
+    const isManager = authority === 3;
+    // 计算退票时间离发车时长，并据此计算所要扣积分数
+    const punishIntegral = isManager ? 0 : this.processPunishIntegral(id);
+    let content = isManager
+      ? '你确定要退回该车票？'
+      : punishIntegral
+        ? `你确定要退回该车票？ \n将会扣除 ${punishIntegral} 积分`
+        : `你确定要退回该车票？ \n将不会扣除积分`;
     this.setState({
       tmp_orderId: id
     }, () => {
       Taro.showModal({
         title: '退票确认',
-        content: '你确定要退回该车票？'
+        content
       })
         .then(({confirm}) => {
-          confirm && this.handleReturnConfirm();
+          confirm && this.handleReturnConfirm(punishIntegral);
         });
     });
   };
@@ -145,12 +182,13 @@ class Order extends Component {
     })
   };
 
-  handleReturnConfirm = () => {
+  handleReturnConfirm = (punishIntegral) => {
     const {dispatch} = this.props;
     const {tmp_orderId} = this.state;
     dispatch({
       type: 'order/queryOrderReturn',
-      payload: tmp_orderId
+      orderId: tmp_orderId,
+      punishIntegral
     });
   };
 

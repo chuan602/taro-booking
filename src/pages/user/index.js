@@ -45,6 +45,7 @@ export default class User extends Component {
   render() {
     const { myIntegral } = this.props;
     const { authority, num } = Taro.getStorageSync('USER_INFO') || {};
+    const isManager = authority === 3;
     return (
       <View className="user-page">
         <View className="user-page-banner">
@@ -82,12 +83,16 @@ export default class User extends Component {
             })}
             arrow='right'
           />
-          <AtListItem
-            title='我的信用分'
-            thumb={pointIcon}
-            onClick={() => {}}
-            extraText={`${myIntegral}分`}
-          />
+          {
+            !isManager ? (
+              <AtListItem
+                title='我的信用分'
+                thumb={pointIcon}
+                onClick={() => {}}
+                extraText={`${myIntegral}分`}
+              />
+            ) : ''
+          }
         </AtList>
       </View>
     )

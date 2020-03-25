@@ -10,10 +10,6 @@ export default {
   effects: {
     *queryOrderList({ payload }, { put, call }){
       try {
-        Taro.showLoading({
-          title: '正在加载...',
-          mask: true,
-        });
         const auth = Taro.getStorageSync(USER_INFO);
         const { id } = auth;
         const res = yield call(queryOrderListService, id);
@@ -40,8 +36,15 @@ export default {
         Taro.stopPullDownRefresh();
       }
     },
-    *queryOrderReturn({ payload }, { put, call }){
-      const res = yield call(queryOrderReturnService, payload);
+    *queryOrderReturn({ orderId, punishIntegral }, { put, call }){
+      const { id } = Taro.getStorageSync(USER_INFO);
+      const res = yield call(queryOrderReturnService, orderId, punishIntegral, id);
+      const { status } = res.data;
+      if (status === 200) Taro.showToast({
+        title: '退票成功',
+        icon: 'success',
+        mask: true
+      });
       // 更新数据
       yield put({
         type: 'queryOrderList'

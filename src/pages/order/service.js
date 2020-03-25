@@ -6,11 +6,13 @@ export const queryOrderListService = (userId) =>
     method: 'GET'
   });
 
-export const queryOrderReturnService = (orderId) =>
+export const queryOrderReturnService = (orderId, punishIntegral, userId) =>
   Request({
     url: '/order/return',
     method: 'POST',
     data: {
-      orderId
+      orderId,
+      punishIntegral,
+      userId
     }
   });

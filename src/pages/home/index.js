@@ -42,8 +42,9 @@ componentWillMount() {
     this.refreshData();
   }
 
-  componentDidMount = () => {
-  };
+  componentDidShow() {
+    this.refreshData()
+  }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
     const {isShowQr} = this.props;

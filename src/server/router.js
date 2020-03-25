@@ -198,10 +198,11 @@ router.get('/order/list/:userId', function (req, res) {
 * POST 退票接口
 * */
 router.post('/order/return', function (req, res) {
-  const { orderId } = req.body;
+  const { orderId, punishIntegral, userId } = req.body;
+  const authCode = req.get('auth-code');
   connection.query(`SELECT car_id, ticket_num FROM t_order WHERE id = ?`, [orderId], function (err, data1) {
     if (err) res.status(500);
-    if (data1) {
+    if (data1.length) {
       const { car_id, ticket_num } = data1[0];
       connection.query(`UPDATE t_order SET order_status = 2 WHERE id = ?`, [orderId], function (err, data2) {
         if (err) res.status(500);
@@ -209,7 +210,32 @@ router.post('/order/return', function (req, res) {
           connection.query(`UPDATE t_ticket SET rest_ticket = rest_ticket + ? WHERE id = ?`,
             [ticket_num, car_id], function (err, data3) {
               if (err) res.status(500);
-              if (data3) res.json(data3);
+              if (authCode === 3) {res.json({status: 200}); return;}
+              if (data3) {
+                // 扣除积分
+                connection.query(`SELECT integral FROM t_users WHERE id = ?`,
+                  [userId], (err, data) => {
+                    if (err) res.status(500);
+                    if (data.length){
+                      const { integral } = data[0];
+                      if (punishIntegral >= integral) {
+                        connection.query(`UPDATE t_users SET integral = 0 WHERE id = ?`,
+                          [userId], (err, data) => {
+                            if (err) res.status(500);
+                            res.json({ status: 200 });
+                          });
+                      } else {
+                        connection.query(`UPDATE t_users SET integral = integral - ? WHERE id = ?`,
+                          [punishIntegral, userId], (err, data) => {
+                            if (err) res.status(500);
+                            res.json({ status: 200 });
+                          });
+                      }
+                    } else {
+                      res.status(501);
+                    }
+                  });
+              }
             });
         }
       })
