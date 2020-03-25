@@ -3,8 +3,9 @@ const mysql = require('mysql');
 const uuid = require('uuid/v1');
 const dayjs = require('dayjs');
 const qr = require('qr-image');
+const schedule = require('node-schedule');
 const { DEADLINE_TIME, SCAN_DEADLINE_TIME, SocketMap,
-  INVALIDATION_TIME} = require('./config');
+  INVALIDATION_TIME, ORIGINAL_INTEGRAL} = require('./config');
 const { updateIntegral } = require('./common');
 
 const router = express.Router();
@@ -17,6 +18,11 @@ const connection = mysql.createConnection({
 });
 
 connection.connect();
+
+// 定时任务 （新年第一天积分还原）
+schedule.scheduleJob('0 0 0 1 1 *', () => {
+  connection.query('UPDATE t_users SET integral = ?', [ORIGINAL_INTEGRAL])
+});
 
 router.get('/', function (req, res) {
 
