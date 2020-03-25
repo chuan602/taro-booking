@@ -325,11 +325,54 @@ componentWillMount() {
           current={tabCurrent}
           scroll={tabList.length > 4}
           tabList={tabList}
+          className='home-tabs'
           onClick={this.handleTabClick}
         >
-          {
-            this.renderTabPane()
-          }
+          <AtTabsPane className='home-tabPane' current={tabCurrent} index={0}>
+            <View className='home-tabPane-container'>
+              {this.renderDestCard()}
+              {this.renderTicketList()}
+            </View>
+          </AtTabsPane>
+          <AtTabsPane className='home-tabPane' current={tabCurrent} index={1}>
+            <View className='home-tabPane-container'>
+              {this.renderDestCard()}
+              {this.renderTicketList()}
+            </View>
+          </AtTabsPane>
+          <AtTabsPane className='home-tabPane' current={tabCurrent} index={2}>
+            <View className='home-tabPane-container'>
+              {this.renderDestCard()}
+              {this.renderTicketList()}
+            </View>
+          </AtTabsPane>
+          <AtTabsPane className='home-tabPane' current={tabCurrent} index={3}>
+            <View className='home-tabPane-container'>
+              {this.renderDestCard()}
+              {this.renderTicketList()}
+            </View>
+          </AtTabsPane>
+          <AtTabsPane className='home-tabPane' current={tabCurrent} index={4}>
+            <View className='home-tabPane-container'>
+              {this.renderDestCard()}
+              {this.renderTicketList()}
+            </View>
+          </AtTabsPane>
+          <AtTabsPane className='home-tabPane' current={tabCurrent} index={5}>
+            <View className='home-tabPane-container'>
+              {this.renderDestCard()}
+              {this.renderTicketList()}
+            </View>
+          </AtTabsPane>
+          <AtTabsPane className='home-tabPane' current={tabCurrent} index={6}>
+            <View className='home-tabPane-container'>
+              {this.renderDestCard()}
+              {this.renderTicketList()}
+            </View>
+          </AtTabsPane>
+          {/*{*/}
+          {/*  this.renderTabPane()*/}
+          {/*}*/}
         </AtTabs>
         {
           /*

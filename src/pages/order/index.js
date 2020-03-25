@@ -237,6 +237,7 @@ class Order extends Component {
         <AtTabs
           current={tabCurrent}
           tabList={tabList}
+          className='order-tabs'
           onClick={this.handleTabClick}
         >
           <AtTabsPane className='order-tabPane' current={tabCurrent} index={0}>

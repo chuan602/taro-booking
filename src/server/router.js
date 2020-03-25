@@ -172,18 +172,26 @@ router.get('/qr/:id', function (req, res) {
 router.get('/order/list/:userId', function (req, res) {
   const userId = req.params.userId;
   const { type } = req.query;
+  const authCode = req.get('auth_code');
+  const isManage = authCode === 3;
+  const updateOrderStatus = () => {
+    // 更新 待出行 订单的状态（是否过期）
+    const updateStatusSql = `UPDATE t_order SET order_status = 3 WHERE id IN (SELECT tmp.id FROM (SELECT o.id AS id FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = 0 AND t.depart_date < ? OR user_id = ? AND order_status = 0 AND t.depart_date = ? AND t.depart_time < ?)tmp)`;
+    const date = dayjs().format('YYYY-MM-DD');
+    const time = dayjs().subtract(INVALIDATION_TIME, 'minute').format('HH:mm:ss');
+    connection.query(updateStatusSql, [userId, date, userId, date, time], () => {});
+  };
   // 更新 积分
-  updateIntegral(connection, userId, res)
-    .then(() => {
-      // 更新 待出行 订单的状态（是否过期）
-      const updateStatusSql = `UPDATE t_order SET order_status = 3 WHERE id IN (SELECT tmp.id FROM (SELECT o.id AS id FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = 0 AND t.depart_date < ? OR user_id = ? AND order_status = 0 AND t.depart_date = ? AND t.depart_time < ?)tmp)`;
-      const date = dayjs().format('YYYY-MM-DD');
-      const time = dayjs().subtract(INVALIDATION_TIME, 'minute').format('HH:mm:ss');
-      connection.query(updateStatusSql, [userId, date, userId, date, time], () => {});
-    })
-    .catch((isIntegral) => {
-      isIntegral && res.json({status: 400})
-    });
+  isManage
+    ? updateOrderStatus()
+    : updateIntegral(connection, userId, res)
+      .then(() => {
+        updateOrderStatus();
+      })
+      .catch((isIntegral) => {
+        updateOrderStatus();
+        isIntegral && res.json({status: 400})
+      });
   // 获取用户的订单列表
   const sql = type ? `SELECT * FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = ? ORDER BY order_time DESC` :
     `SELECT * FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? ORDER BY order_time DESC`;
