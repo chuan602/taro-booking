@@ -10,10 +10,9 @@ import dayjs from "dayjs";
 
 const processAvailableBookingDay = (integral ,baseDay) => {
   const resultObj = { calcDay: 1, isSixHour: false };
-  console.log('integral', integral);
-  if (integral === 10) resultObj.calcDay = baseDay;
-  if (integral >= 8 && integral <= 9) resultObj.calcDay = baseDay - 1;
-  if (integral >= 4 && integral <= 7) resultObj.calcDay = baseDay - 2;
+  if (integral >= 9) resultObj.calcDay = baseDay;
+  if (integral >= 7 && integral <= 8) resultObj.calcDay = baseDay - 1;
+  if (integral >= 4 && integral <= 6) resultObj.calcDay = baseDay - 2;
   if (integral >= 1 && integral <= 3) resultObj.isSixHour = true;
   return resultObj;
 };
@@ -40,7 +39,6 @@ export default {
           integral
         });
         const {tabList, isSixHour} = yield select(({ home }) => home);
-        console.log('tabList', tabList);
         const res = yield call(queryCarListByDateService, tabList[tabCurrent].value, isSixHour);
         yield put({
           type: 'queryCarListEnd',
