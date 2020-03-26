@@ -173,7 +173,7 @@ router.get('/order/list/:userId', function (req, res) {
   const userId = req.params.userId;
   const { type } = req.query;
   const authCode = req.get('auth_code');
-  const isManage = authCode === 3;
+  const isManage = authCode === '3';
   const updateOrderStatus = () => {
     // 更新 待出行 订单的状态（是否过期）
     const updateStatusSql = `UPDATE t_order SET order_status = 3 WHERE id IN (SELECT tmp.id FROM (SELECT o.id AS id FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = 0 AND t.depart_date < ? OR user_id = ? AND order_status = 0 AND t.depart_date = ? AND t.depart_time < ?)tmp)`;
@@ -181,10 +181,10 @@ router.get('/order/list/:userId', function (req, res) {
     const time = dayjs().subtract(INVALIDATION_TIME, 'minute').format('HH:mm:ss');
     connection.query(updateStatusSql, [userId, date, userId, date, time], () => {});
   };
-  // 更新 积分
+  // 更新 积分 和 状态
   isManage
-    ? updateOrderStatus()
-    : updateIntegral(connection, userId, res)
+    ? updateOrderStatus() // 更新车票状态(是否过期)
+    : updateIntegral(connection, userId, res) // 更新积分
       .then(() => {
         updateOrderStatus();
       })
@@ -224,7 +224,7 @@ router.post('/order/return', function (req, res) {
           connection.query(`UPDATE t_ticket SET rest_ticket = rest_ticket + ? WHERE id = ?`,
             [ticket_num, car_id], function (err, data3) {
               if (err) res.status(500);
-              if (authCode === 3) {res.json({status: 200}); return;}
+              if (authCode === '3') {res.json({status: 200}); return;}
               if (data3) {
                 // 扣除积分
                 connection.query(`SELECT integral FROM t_users WHERE id = ?`,
