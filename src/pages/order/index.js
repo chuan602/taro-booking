@@ -59,7 +59,7 @@ class Order extends Component {
   };
 
 
-  componentDidMount = () => {
+  componentWillMount = () => {
     Taro.showLoading({
       title: '正在加载...',
       mask: true,
@@ -203,7 +203,7 @@ class Order extends Component {
           <View className='modal-image-container'>
             <Image
               mode='aspectFit'
-              src={`${baseUrl}/qr/${encodeURIComponent(tmp_orderId)}`}
+              src={tmp_orderId ? `${baseUrl}/qr/${encodeURIComponent(tmp_orderId)}` : ''}
             />
           </View>
         </AtModalContent>
@@ -240,7 +240,7 @@ class Order extends Component {
           className='order-tabs'
           onClick={this.handleTabClick}
         >
-          <AtTabsPane className='order-tabPane' current={tabCurrent} index={0}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='order-tabPane' current={tabCurrent} index={0}>
             <ScrollView
               scrollY
               enableBackToTop
@@ -250,7 +250,7 @@ class Order extends Component {
                 {
                   allOrder.length ? allOrder.map(order => (
                     <OrderItem
-                      key={order.id}
+                      key={order.id + Math.random()}
                       statusCode={order.order_status}
                       departure={order.campus === '01' ? '海珠校区' : '白云校区'}
                       destination={order.campus === '01' ? '白云校区' : '海珠校区'}
@@ -267,7 +267,7 @@ class Order extends Component {
               </View>
             </ScrollView>
           </AtTabsPane>
-          <AtTabsPane className='order-tabPane' current={tabCurrent} index={1}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='order-tabPane' current={tabCurrent} index={1}>
             <ScrollView
               scrollY
               enableBackToTop
@@ -277,7 +277,7 @@ class Order extends Component {
                 {
                   togoOrder.length ? togoOrder.map(order => (
                     <OrderItem
-                      key={order.id}
+                      key={order.id + Math.random()}
                       statusCode={order.order_status}
                       departure={order.campus === '01' ? '海珠校区' : '白云校区'}
                       destination={order.campus === '01' ? '白云校区' : '海珠校区'}
@@ -294,7 +294,7 @@ class Order extends Component {
               </View>
             </ScrollView>
           </AtTabsPane>
-          <AtTabsPane className='order-tabPane' current={tabCurrent} index={2}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='order-tabPane' current={tabCurrent} index={2}>
             <ScrollView
               scrollY
               enableBackToTop
@@ -304,7 +304,7 @@ class Order extends Component {
                 {
                   expiredOrder.length ? expiredOrder.map(order => (
                     <OrderItem
-                      key={order.id}
+                      key={order.id + Math.random()}
                       statusCode={order.order_status}
                       departure={order.campus === '01' ? '海珠校区' : '白云校区'}
                       destination={order.campus === '01' ? '白云校区' : '海珠校区'}
@@ -319,7 +319,7 @@ class Order extends Component {
               </View>
             </ScrollView>
           </AtTabsPane>
-          <AtTabsPane className='order-tabPane' current={tabCurrent} index={3}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='order-tabPane' current={tabCurrent} index={3}>
             <ScrollView
               scrollY
               enableBackToTop
@@ -329,7 +329,7 @@ class Order extends Component {
                 {
                   invalidOrder.length ? invalidOrder.map(order => (
                     <OrderItem
-                      key={order.id}
+                      key={order.id + Math.random()}
                       statusCode={order.order_status}
                       departure={order.campus === '01' ? '海珠校区' : '白云校区'}
                       destination={order.campus === '01' ? '白云校区' : '海珠校区'}
@@ -344,7 +344,7 @@ class Order extends Component {
               </View>
             </ScrollView>
           </AtTabsPane>
-          <AtTabsPane className='order-tabPane' current={tabCurrent} index={4}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='order-tabPane' current={tabCurrent} index={4}>
             <ScrollView
               scrollY
               enableBackToTop
@@ -354,7 +354,7 @@ class Order extends Component {
                 {
                   returnedOrder.length ? returnedOrder.map(order => (
                     <OrderItem
-                      key={order.id}
+                      key={order.id + Math.random()}
                       statusCode={order.order_status}
                       departure={order.campus === '01' ? '海珠校区' : '白云校区'}
                       destination={order.campus === '01' ? '白云校区' : '海珠校区'}

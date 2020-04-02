@@ -176,36 +176,51 @@ router.get('/order/list/:userId', function (req, res) {
   const isManage = authCode === '3';
   const updateOrderStatus = () => {
     // 更新 待出行 订单的状态（是否过期）
-    const updateStatusSql = `UPDATE t_order SET order_status = 3 WHERE id IN (SELECT tmp.id FROM (SELECT o.id AS id FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = 0 AND t.depart_date < ? OR user_id = ? AND order_status = 0 AND t.depart_date = ? AND t.depart_time < ?)tmp)`;
-    const date = dayjs().format('YYYY-MM-DD');
-    const time = dayjs().subtract(INVALIDATION_TIME, 'minute').format('HH:mm:ss');
-    connection.query(updateStatusSql, [userId, date, userId, date, time], () => {});
+    return new Promise((resolve) => {
+      const updateStatusSql = `UPDATE t_order SET order_status = 3 WHERE id IN (SELECT tmp.id FROM (SELECT o.id AS id FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = 0 AND t.depart_date < ? OR user_id = ? AND order_status = 0 AND t.depart_date = ? AND t.depart_time < ?)tmp)`;
+      const date = dayjs().format('YYYY-MM-DD');
+      const time = dayjs().subtract(INVALIDATION_TIME, 'minute').format('HH:mm:ss');
+      connection.query(updateStatusSql, [userId, date, userId, date, time], (err) => {
+        if (err) res.status(500);
+        resolve()
+      });
+    })
+  };
+  const queryOrderList = () => {
+    // 获取用户的订单列表
+    const sql = type ? `SELECT * FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = ? ORDER BY order_time DESC` :
+      `SELECT * FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? ORDER BY order_time DESC`;
+    const paramsArr = type ? [userId, +type] : [userId];
+    connection.query(sql, paramsArr, function (err, data) {
+      if (err) res.status(500);
+      for (const item of data){
+        // 处理班车日期和时间的格式
+        item.depart_time = item.depart_time.slice(0, 5);
+        item.depart_date = new Date(item.depart_date).toLocaleDateString();
+        item.order_time = new Date(item.order_time).toLocaleDateString() + ' ' + new Date(item.order_time).toTimeString().slice(0,5);
+      }
+      res.json({status: 200, data});
+    })
   };
   // 更新 积分 和 状态
   isManage
     ? updateOrderStatus() // 更新车票状态(是否过期)
-    : updateIntegral(connection, userId, res) // 更新积分
       .then(() => {
-        updateOrderStatus();
+        queryOrderList();
+      })
+    : updateIntegral(connection, userId, res) // 更新积分
+      .then((currentIntegral) => {
+        return updateOrderStatus();
+      })
+      .then(() => {
+        queryOrderList();
       })
       .catch((isIntegral) => {
-        updateOrderStatus();
-        isIntegral && res.json({status: 400})
+        updateOrderStatus()
+          .then(() => {
+            isIntegral && res.json({status: 400})
+          })
       });
-  // 获取用户的订单列表
-  const sql = type ? `SELECT * FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = ? ORDER BY order_time DESC` :
-    `SELECT * FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? ORDER BY order_time DESC`;
-  const paramsArr = type ? [userId, +type] : [userId];
-  connection.query(sql, paramsArr, function (err, data) {
-    if (err) res.status(500);
-    for (const item of data){
-      // 处理班车日期和时间的格式
-      item.depart_time = item.depart_time.slice(0, 5);
-      item.depart_date = new Date(item.depart_date).toLocaleDateString();
-      item.order_time = new Date(item.order_time).toLocaleDateString() + ' ' + new Date(item.order_time).toTimeString().slice(0,5);
-    }
-    res.json({status: 200, data});
-  })
 });
 
 /*

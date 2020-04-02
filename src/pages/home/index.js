@@ -43,6 +43,10 @@ componentWillMount() {
   }
 
   componentDidShow() {
+    Taro.showLoading({
+      title: '正在加载...',
+      mask: true,
+    });
     this.refreshData()
   }
 
@@ -178,7 +182,7 @@ componentWillMount() {
     const list = ticketData.length
       ? ticketData.map((item) => (
         <ListItem
-          key={item.id}
+          key={item.id + Math.random()}
           departTime={item.depart_time}
           restTicket={item.rest_ticket}
           departure={item.depart_place}
@@ -328,43 +332,43 @@ componentWillMount() {
           className='home-tabs'
           onClick={this.handleTabClick}
         >
-          <AtTabsPane className='home-tabPane' current={tabCurrent} index={0}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='home-tabPane' current={tabCurrent} index={0}>
             <View className='home-tabPane-container'>
               {this.renderDestCard()}
               {this.renderTicketList()}
             </View>
           </AtTabsPane>
-          <AtTabsPane className='home-tabPane' current={tabCurrent} index={1}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='home-tabPane' current={tabCurrent} index={1}>
             <View className='home-tabPane-container'>
               {this.renderDestCard()}
               {this.renderTicketList()}
             </View>
           </AtTabsPane>
-          <AtTabsPane className='home-tabPane' current={tabCurrent} index={2}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='home-tabPane' current={tabCurrent} index={2}>
             <View className='home-tabPane-container'>
               {this.renderDestCard()}
               {this.renderTicketList()}
             </View>
           </AtTabsPane>
-          <AtTabsPane className='home-tabPane' current={tabCurrent} index={3}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='home-tabPane' current={tabCurrent} index={3}>
             <View className='home-tabPane-container'>
               {this.renderDestCard()}
               {this.renderTicketList()}
             </View>
           </AtTabsPane>
-          <AtTabsPane className='home-tabPane' current={tabCurrent} index={4}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='home-tabPane' current={tabCurrent} index={4}>
             <View className='home-tabPane-container'>
               {this.renderDestCard()}
               {this.renderTicketList()}
             </View>
           </AtTabsPane>
-          <AtTabsPane className='home-tabPane' current={tabCurrent} index={5}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='home-tabPane' current={tabCurrent} index={5}>
             <View className='home-tabPane-container'>
               {this.renderDestCard()}
               {this.renderTicketList()}
             </View>
           </AtTabsPane>
-          <AtTabsPane className='home-tabPane' current={tabCurrent} index={6}>
+          <AtTabsPane key={`${Math.random()} ${Date.now()}`} className='home-tabPane' current={tabCurrent} index={6}>
             <View className='home-tabPane-container'>
               {this.renderDestCard()}
               {this.renderTicketList()}

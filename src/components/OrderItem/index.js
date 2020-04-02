@@ -7,6 +7,7 @@ import iconTogo from '../../images/order/order_togo.png';
 import iconHaveWent from '../../images/order/order_already.png';
 import iconReturn from '../../images/order/order_return.png';
 import iconOutofdate from '../../images/order/order_outofdate.png';
+import {USER_INFO} from "../../utils/constants";
 
 export default class OrderItem extends Component{
   processStatusCode = (togo, haveWent, haveReturn, invalidation) => {
@@ -26,6 +27,7 @@ export default class OrderItem extends Component{
   };
 
   render() {
+    const { authority } = Taro.getStorageSync(USER_INFO);
     const {
       key,
       departure,
@@ -99,7 +101,7 @@ export default class OrderItem extends Component{
             订票数量：{ ticketNum }
           </View>
           {
-            statusCode === 3 ? (
+            statusCode === 3 && authority !== 3 ? (
               <View className='content-item' style={{color: '#F83261'}}>
                 已扣除4积分
               </View>
