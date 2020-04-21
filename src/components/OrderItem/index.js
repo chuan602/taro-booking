@@ -103,7 +103,7 @@ export default class OrderItem extends Component{
           {
             statusCode === 3 && authority !== 3 ? (
               <View className='content-item' style={{color: '#F83261'}}>
-                已扣除4积分
+                已扣除积分
               </View>
             ) : ''
           }

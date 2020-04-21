@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<config>
+  <deadline>10</deadline>
+  <delay>10</delay>
+  <punish>4</punish>
+  <full>10</full>
+  <advance>30</advance>
+</config>

@@ -3,10 +3,18 @@ const mysql = require('mysql');
 const uuid = require('uuid/v1');
 const dayjs = require('dayjs');
 const qr = require('qr-image');
+const fs = require('fs');
+const path = require('path');
+const xml2js = require('xml2js');
 const schedule = require('node-schedule');
-const { DEADLINE_TIME, SCAN_DEADLINE_TIME, SocketMap,
-  INVALIDATION_TIME, ORIGINAL_INTEGRAL} = require('./config');
+const { SocketMap } = require('./config');
 const { updateIntegral } = require('./common');
+
+let DEADLINE = 10;
+let FULL = 10;
+let DELAY = 10;
+let ADVANCE = 30;
+let PUNISH = 4;
 
 const router = express.Router();
 
@@ -21,7 +29,7 @@ connection.connect();
 
 // 定时任务 （新年第一天积分还原）
 schedule.scheduleJob('0 0 0 1 1 *', () => {
-  connection.query('UPDATE t_users SET integral = ?', [ORIGINAL_INTEGRAL])
+  connection.query('UPDATE t_users SET integral = ?', [FULL])
 });
 
 router.get('/', function (req, res) {
@@ -33,11 +41,12 @@ router.get('/', function (req, res) {
 * POST 登陆API
 * */
 router.post('/login', function (req, res) {
-    const {userNum, password, isScanEnd} = req.body;
-    const sql = isScanEnd
-      ? 'select * from t_users where num = ? and password = ? and authority = 4'
-      : 'select * from t_users where num = ? and password = ? and authority != 4';
-    connection.query(sql, [userNum, password], function (err, data) {
+    function controller() {
+      const {userNum, password, isScanEnd} = req.body;
+      const sql = isScanEnd
+        ? 'select * from t_users where num = ? and password = ? and authority = 4'
+        : 'select * from t_users where num = ? and password = ? and authority != 4';
+      connection.query(sql, [userNum, password], function (err, data) {
         if (err) { res.status(500) }
         if (data && data.length) {
 
@@ -50,7 +59,7 @@ router.post('/login', function (req, res) {
               res.json({status: 200, data: data[0]});
               return;
             }
-            updateIntegral(connection, id, res)
+            updateIntegral(connection, id, res, DELAY, PUNISH)
               .then((integral) => {
                 res.json({status: 200, data: data[0]});
               })
@@ -65,7 +74,35 @@ router.post('/login', function (req, res) {
           //密码验证失败
           res.json({status: 401});
         }
-    })
+      })
+    }
+    const xmlParser = new xml2js.Parser();
+    const readFileSync = fs.readFileSync(path.resolve(__dirname, './config.xml'));
+    xmlParser.parseStringPromise(readFileSync)
+      .then(result => {
+        const { deadline, delay, punish, full, advance } = result.config;
+        DEADLINE = +deadline[0];
+        DELAY = +delay[0];
+        PUNISH = +punish[0];
+        FULL = +full[0];
+        ADVANCE = +advance[0];
+        controller();
+      })
+      .catch(() => res.status(500));
+});
+
+router.post('/manager/login', function (req, res) {
+  const {username, password} = req.query;
+  const sql = 'select * from t_users where num = ? and password = ? and authority = 5';
+  connection.query(sql, [username, password], function (err, data) {
+    if (err) { res.json({ status: 500 }) }
+    if (data && data.length) {
+      res.json({status: 200, data: data[0]});
+    } else {
+      //密码验证失败
+      res.json({status: 401});
+    }
+  })
 });
 
 /*
@@ -76,7 +113,7 @@ router.get('/carList', function (req, res) {
   // 订票截止时间 （发车前10分钟）
   const deadlineTime = dayjs().isBefore(dayjs(date))
     ? '00:00:00'
-    : dayjs().add(DEADLINE_TIME, 'minute').format('HH:mm:ss');
+    : dayjs().add(DEADLINE, 'minute').format('HH:mm:ss');
   const sixHourdeadlineTime = dayjs().add(6, 'hour').isBefore(dayjs().endOf('day'))
     ? dayjs().add(6, 'hour').format('HH:mm:ss')
     : '23:59:59';
@@ -179,7 +216,7 @@ router.get('/order/list/:userId', function (req, res) {
     return new Promise((resolve) => {
       const updateStatusSql = `UPDATE t_order SET order_status = 3 WHERE id IN (SELECT tmp.id FROM (SELECT o.id AS id FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = 0 AND t.depart_date < ? OR user_id = ? AND order_status = 0 AND t.depart_date = ? AND t.depart_time < ?)tmp)`;
       const date = dayjs().format('YYYY-MM-DD');
-      const time = dayjs().subtract(INVALIDATION_TIME, 'minute').format('HH:mm:ss');
+      const time = dayjs().subtract(DELAY, 'minute').format('HH:mm:ss');
       connection.query(updateStatusSql, [userId, date, userId, date, time], (err) => {
         if (err) res.status(500);
         resolve()
@@ -208,7 +245,7 @@ router.get('/order/list/:userId', function (req, res) {
       .then(() => {
         queryOrderList();
       })
-    : updateIntegral(connection, userId, res) // 更新积分
+    : updateIntegral(connection, userId, res, DELAY, PUNISH) // 更新积分
       .then((currentIntegral) => {
         return updateOrderStatus();
       })
@@ -321,7 +358,7 @@ router.get('/scan/carList', function (req, res) {
   // 订票截止时间 （发车前10分钟）
   const deadlineTime = dayjs().isBefore(dayjs(date))
     ? '00:00:00'
-    : dayjs().subtract(SCAN_DEADLINE_TIME, 'minute').format('HH:mm:ss');
+    : dayjs().subtract(ADVANCE, 'minute').format('HH:mm:ss');
   connection.query(`select * from t_ticket where depart_date = ? and depart_time > ? order by depart_time`,
     [date, deadlineTime], function (err, data) {
       if (err) { res.status(500) }
@@ -373,6 +410,47 @@ router.post('/scan/qr', function (req, res) {
           });
       }
     })
+});
+
+/**
+ * GET 获取配置
+ * @type {Router}
+ */
+router.get('/manager/config', function (req, res) {
+  const xmlParser = new xml2js.Parser();
+  fs.readFile(path.resolve(__dirname, './config.xml'), function (err, file) {
+    xmlParser.parseStringPromise(file)
+      .then((parserResult) => {
+        res.json({
+          status: 200,
+          data: parserResult
+        });
+      })
+      .catch(err => {
+        res.json({
+          status: 500
+        })
+      })
+  })
+});
+
+/**
+ * POST 设置匹配
+ * @type {Router}
+ */
+router.post('/manager/config', function (req, res) {
+  const config = req.query
+  const xmlBuilder = new xml2js.Builder();
+  const data = {
+    "config": config
+  };
+  const builderData = xmlBuilder.buildObject(data);
+  fs.writeFile(path.resolve(__dirname, './config.xml'), builderData, {}, (err, result) => {
+    if (err) { res.json({ status: 500 }) }
+    res.json({
+      status: 200
+    })
+  });
 });
 
 module.exports = router;
