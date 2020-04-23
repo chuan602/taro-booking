@@ -93,7 +93,7 @@ router.post('/login', function (req, res) {
 
 router.post('/manager/login', function (req, res) {
   const {username, password} = req.body;
-  const sql = 'select * from t_users where num = ? and password = ? and authority = 5';
+  const sql = 'select * from t_users where num = ? and password = ? and authority = 3';
   connection.query(sql, [username, password], function (err, data) {
     if (err) { res.json({ status: 500 }) }
     if (data && data.length) {
