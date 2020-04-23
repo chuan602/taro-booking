@@ -92,7 +92,7 @@ router.post('/login', function (req, res) {
 });
 
 router.post('/manager/login', function (req, res) {
-  const {username, password} = req.query;
+  const {username, password} = req.body;
   const sql = 'select * from t_users where num = ? and password = ? and authority = 5';
   connection.query(sql, [username, password], function (err, data) {
     if (err) { res.json({ status: 500 }) }
@@ -435,11 +435,11 @@ router.get('/manager/config', function (req, res) {
 });
 
 /**
- * POST 设置匹配
+ * POST 设置配置
  * @type {Router}
  */
 router.post('/manager/config', function (req, res) {
-  const config = req.query
+  const config = req.body;
   const xmlBuilder = new xml2js.Builder();
   const data = {
     "config": config
@@ -451,6 +451,44 @@ router.post('/manager/config', function (req, res) {
       status: 200
     })
   });
+});
+
+/**
+ * POST 班车数据导入
+ * @type {Router}
+ */
+router.post('/manager/excel/ticket', function (req, res) {
+  const ticketData = req.body;
+  console.log('ticketData', ticketData)
+  const result = ticketData.map(item => {
+    // return Object.assign(item, {id: uuid()})
+    return [uuid(), item.depart_time, item.depart_place, item.rest_ticket, item.car_num, item.campus, item.depart_date]
+  });
+  console.log('result', result);
+  const sql = `INSERT INTO t_ticket (id, depart_time, depart_place, rest_ticket, car_num, campus, depart_date) VALUES ?`;
+  connection.query(sql, [result], function (err, data) {
+    if (err) res.json({ status: 500 });
+    if (data) res.json({ status: 200 });
+  })
+});
+
+/**
+ * POST 用户数据导入
+ * @type {Router}
+ */
+router.post('/manager/excel/user', function (req, res) {
+  const userData = req.body;
+  console.log('userData', userData)
+  const result = userData.map(item => {
+    // return Object.assign(item, {id: uuid()})
+    return [uuid(), item.password, item.authority, item.num, FULL]
+  });
+  console.log('result', result);
+  const sql = `INSERT INTO t_users (id, password, authority, num, integral) VALUES ?`;
+  connection.query(sql, [result], function (err, data) {
+    if (err) res.json({ status: 500 });
+    if (data) res.json({ status: 200 });
+  })
 });
 
 module.exports = router;

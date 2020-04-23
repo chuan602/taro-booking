@@ -56,6 +56,11 @@ app.set('view engine', 'html');
  * SSR end
  */
 
+/**
+ * 静态化后台管理页面
+ */
+app.use('/admin', express.static(path.resolve(__dirname, './dist')));
+
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));
 
