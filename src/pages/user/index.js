@@ -86,7 +86,7 @@ export default class User extends Component {
           {
             !isManager ? (
               <AtListItem
-                title='我的信用分'
+                title='我的积分'
                 thumb={pointIcon}
                 onClick={() => {}}
                 extraText={`${myIntegral}分`}
