@@ -41,6 +41,17 @@ router.get('/', function (req, res) {
 * POST 登陆API
 * */
 router.post('/login', function (req, res) {
+    function updateStatus(id) {
+      return new Promise((resolve, reject) => {
+        const updateStatusSql = `UPDATE t_order SET order_status = 3 WHERE id IN (SELECT tmp.id FROM (SELECT o.id AS id FROM t_ticket t INNER JOIN t_order o ON o.car_id = t.id WHERE user_id = ? AND order_status = 0 AND t.depart_date < ? OR user_id = ? AND order_status = 0 AND t.depart_date = ? AND t.depart_time < ?)tmp)`;
+        const date = dayjs().format('YYYY-MM-DD');
+        const time = dayjs().subtract(DELAY, 'minute').format('HH:mm:ss');
+        connection.query(updateStatusSql, [id, date, id, date, time], (err) => {
+          if (err) {res.status(500); reject()}
+          resolve()
+        });
+      })
+    }
     function controller() {
       const {userNum, password, isScanEnd} = req.body;
       const sql = isScanEnd
@@ -61,10 +72,18 @@ router.post('/login', function (req, res) {
             }
             updateIntegral(connection, id, res, DELAY, PUNISH)
               .then((integral) => {
+                return updateStatus(id)
+              })
+              .then(() => {
                 res.json({status: 200, data: data[0]});
               })
               .catch((isIntegral) => {
-                isIntegral && res.json({status: 400});
+                if (isIntegral) {
+                  updateStatus(id)
+                    .then(() => {
+                      res.json({status: 400})
+                    })
+                }
               });
           } else {
             res.json({status: 200, data: data[0]});
